@@ -16,7 +16,6 @@
       color: #333;
       line-height: 1.6;
     }
-
     .content {
       width: 100%;
       max-width: 800px;
@@ -27,17 +26,18 @@
       text-align: justify;
       position: relative;
     }
-
     .image-container {
-      position: absolute;
+      /* For text wrapping with shape-outside, the container needs to be floated and in flow.
+         If full text reflow is desired, consider using relative positioning with CSS transforms. */
+      float: left;
       margin: 20px;
       transition: all 0.3s ease;
       z-index: 10;
-      shape-outside: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
-      float: left;
+      shape-outside: polygon(0 0, 100% 0, 100% 100%, 0 100%);
       max-width: 50%; /* Limit max width */
+      /* Adding tabindex for accessibility */
+      outline: none;
     }
-
     .draggable-img {
       width: 100%;
       height: auto;
@@ -46,12 +46,10 @@
       transition: all 0.2s ease;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-
     .draggable-img.selected {
       box-shadow: 0 6px 12px rgba(0,0,0,0.2);
       border: 2px dashed #e63946;
     }
-
     .zoom-controls {
       position: absolute;
       bottom: 10px;
@@ -62,11 +60,9 @@
       display: none;
       z-index: 20;
     }
-
     .zoom-controls.visible {
       display: flex;
     }
-
     .zoom-btn {
       width: 30px;
       height: 30px;
@@ -80,28 +76,23 @@
       align-items: center;
       justify-content: center;
     }
-
     .zoom-btn:hover {
       background: #eee;
     }
-
     h1 {
       font-size: 2.5em;
       margin-bottom: 0.5em;
       color: #2a9d8f;
     }
-
     h2 {
       font-size: 1.8em;
       margin-top: 1.5em;
       color: #264653;
     }
-
     p {
       margin: 0 0 1.2em 0;
       text-align: justify;
     }
-
     .help-text {
       font-style: italic;
       margin-top: 40px;
@@ -109,12 +100,10 @@
       background: #e9ecef;
       border-radius: 5px;
     }
-
     @media (max-width: 600px) {
       .content {
         padding: 10px;
       }
-      
       h1 {
         font-size: 2em;
       }
@@ -126,11 +115,12 @@
     <h1>Freedom Publishing</h1>
     <h2>A New Interactive Reading Experience</h2>
 
-    <div class="image-container" id="imageContainer1" style="width: 300px; top: 150px; left: 50px;">
+    <!-- Added tabindex and aria-label for accessibility -->
+    <div class="image-container" id="imageContainer1" style="width: 300px; top: 150px; left: 50px;" tabindex="0" aria-label="Draggable image container">
       <img class="draggable-img" src="IMG_7424.png" alt="Nature Image">
       <div class="zoom-controls">
-        <button class="zoom-btn zoom-in">+</button>
-        <button class="zoom-btn zoom-out">−</button>
+        <button class="zoom-btn zoom-in" aria-label="Zoom in">+</button>
+        <button class="zoom-btn zoom-out" aria-label="Zoom out">−</button>
       </div>
     </div>
 
@@ -138,21 +128,21 @@
 
     <p>The relationship between text and image has always been complex. In conventional publishing, images are fixed in place, anchoring the text around them. But what if we could liberate both elements? What if readers could position images where they want, resize them according to their focus, while the text intelligently reflows to accommodate these changes?</p>
 
-    <div class="image-container" id="imageContainer2" style="width: 250px; top: 400px; left: 400px;">
+    <div class="image-container" id="imageContainer2" style="width: 250px; top: 400px; left: 400px;" tabindex="0" aria-label="Draggable image container">
       <img class="draggable-img" src="IMG_7423.png" alt="Technology Image">
       <div class="zoom-controls">
-        <button class="zoom-btn zoom-in">+</button>
-        <button class="zoom-btn zoom-out">−</button>
+        <button class="zoom-btn zoom-in" aria-label="Zoom in">+</button>
+        <button class="zoom-btn zoom-out" aria-label="Zoom out">−</button>
       </div>
     </div>
 
     <!-- More paragraphs will go here -->
-    
     <div class="help-text">
-      <p><strong>How to interact:</strong> Click on any image to select it (a red border will appear). Once selected, you can:
-      <br>- Drag the image to reposition it
-      <br>- Use the + and - buttons to resize the image
-      <br>- Zoom the entire page with your browser controls (Ctrl/Cmd +/-)</p>
+      <p><strong>How to interact:</strong> Click or tap on any image to select it (a red border will appear). Once selected, you can:
+      <br>- Drag the image (or use arrow keys) to reposition it
+      <br>- Use the + and - buttons (or keyboard keys) to resize the image
+      <br>- For mobile, pinch to zoom the image
+      <br>- Browser zoom (Ctrl/Cmd +/-) works as usual</p>
     </div>
   </div>
 
@@ -164,28 +154,65 @@ document.addEventListener('DOMContentLoaded', function() {
   
   let selectedContainer = null;
   let isDragging = false;
-  let startX = 0;
-  let startY = 0;
-  let containerStartX = 0;
-  let containerStartY = 0;
+  let startX = 0, startY = 0;
+  let containerStartX = 0, containerStartY = 0;
+  let initialPinchDistance = null;
+  let initialPinchWidth = null;
 
-  // Initialize all images
-  containers.forEach((container, index) => {
+  // Helper to calculate distance between two touches
+  function getDistance(touch1, touch2) {
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  // Update the shape-outside property based on current dimensions
+  function updateShapeOutside(container) {
+    const rect = container.getBoundingClientRect();
+    container.style.shapeOutside = `polygon(0 0, ${rect.width}px 0, ${rect.width}px ${rect.height}px, 0 ${rect.height}px)`;
+  }
+  
+  // Save current positions and widths to localStorage
+  function savePositions() {
+    const positions = {};
+    containers.forEach(container => {
+      positions[container.id] = {
+        left: container.style.left,
+        top: container.style.top,
+        width: container.style.width
+      };
+    });
+    localStorage.setItem('imagePositions', JSON.stringify(positions));
+  }
+  
+  // Load positions from localStorage, if any
+  function loadPositions() {
+    const positions = JSON.parse(localStorage.getItem('imagePositions'));
+    if (positions) {
+      containers.forEach(container => {
+        if (positions[container.id]) {
+          container.style.left = positions[container.id].left;
+          container.style.top = positions[container.id].top;
+          container.style.width = positions[container.id].width;
+          updateShapeOutside(container);
+        }
+      });
+    }
+  }
+  
+  // Initialize all images and add keyboard accessibility
+  containers.forEach((container) => {
     const img = container.querySelector('.draggable-img');
     const zoomControls = container.querySelector('.zoom-controls');
     const zoomIn = zoomControls.querySelector('.zoom-in');
     const zoomOut = zoomControls.querySelector('.zoom-out');
     
-    // Handle image selection
+    // Handle image selection via click/tap
     img.addEventListener('click', function(e) {
       e.stopPropagation();
-      
-      // Deselect previously selected image
       if (selectedContainer && selectedContainer !== container) {
         deselectContainer(selectedContainer);
       }
-      
-      // Toggle selection for current image
       if (img.classList.contains('selected')) {
         deselectContainer(container);
         selectedContainer = null;
@@ -200,6 +227,8 @@ document.addEventListener('DOMContentLoaded', function() {
       e.stopPropagation();
       const currentWidth = parseInt(window.getComputedStyle(container).width);
       container.style.width = `${currentWidth * 1.2}px`;
+      updateShapeOutside(container);
+      savePositions();
     });
     
     // Zoom out functionality
@@ -208,10 +237,39 @@ document.addEventListener('DOMContentLoaded', function() {
       const currentWidth = parseInt(window.getComputedStyle(container).width);
       const newWidth = Math.max(100, currentWidth * 0.8);
       container.style.width = `${newWidth}px`;
+      updateShapeOutside(container);
+      savePositions();
+    });
+    
+    // Keyboard accessibility: allow repositioning and zoom with arrow and + / - keys
+    container.addEventListener('keydown', function(e) {
+      if (selectedContainer === container) {
+        const moveAmount = 10;
+        let currentLeft = parseInt(container.style.left, 10) || 0;
+        let currentTop = parseInt(container.style.top, 10) || 0;
+        if (e.key === 'ArrowUp') {
+          container.style.top = (currentTop - moveAmount) + 'px';
+        } else if (e.key === 'ArrowDown') {
+          container.style.top = (currentTop + moveAmount) + 'px';
+        } else if (e.key === 'ArrowLeft') {
+          container.style.left = (currentLeft - moveAmount) + 'px';
+        } else if (e.key === 'ArrowRight') {
+          container.style.left = (currentLeft + moveAmount) + 'px';
+        } else if (e.key === '+' || e.key === '=') {
+          const currentWidth = parseInt(window.getComputedStyle(container).width);
+          container.style.width = `${currentWidth * 1.2}px`;
+        } else if (e.key === '-') {
+          const currentWidth = parseInt(window.getComputedStyle(container).width);
+          container.style.width = `${Math.max(100, currentWidth * 0.8)}px`;
+        }
+        updateShapeOutside(container);
+        savePositions();
+        e.preventDefault();
+      }
     });
   });
   
-  // Click outside to deselect
+  // Deselect container when clicking outside
   document.addEventListener('click', function() {
     if (selectedContainer) {
       deselectContainer(selectedContainer);
@@ -219,142 +277,143 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // Dragging functionality
+  // Dragging functionality for mouse events
   document.addEventListener('mousedown', startDrag);
   document.addEventListener('mousemove', drag);
   document.addEventListener('mouseup', endDrag);
   
-  // Touch events for mobile
+  // Touch events for mobile: includes both dragging (one-finger) and pinch-to-zoom (two-finger)
   document.addEventListener('touchstart', handleTouchStart, { passive: false });
   document.addEventListener('touchmove', handleTouchMove, { passive: false });
   document.addEventListener('touchend', handleTouchEnd);
   
-  // Helper functions
+  // Helper functions for selection
   function selectContainer(container) {
     const img = container.querySelector('.draggable-img');
     const zoomControls = container.querySelector('.zoom-controls');
-    
     img.classList.add('selected');
     zoomControls.classList.add('visible');
     container.style.zIndex = '20';
+    // Focus for keyboard navigation
+    container.focus();
   }
   
   function deselectContainer(container) {
     const img = container.querySelector('.draggable-img');
     const zoomControls = container.querySelector('.zoom-controls');
-    
     img.classList.remove('selected');
     zoomControls.classList.remove('visible');
     container.style.zIndex = '10';
   }
   
+  // Mouse drag functions
   function startDrag(e) {
     if (!selectedContainer || e.target.classList.contains('zoom-btn')) return;
-    
     isDragging = true;
     startX = e.clientX;
     startY = e.clientY;
-    
     const rect = selectedContainer.getBoundingClientRect();
     containerStartX = rect.left;
     containerStartY = rect.top;
-    
     e.preventDefault();
   }
   
   function drag(e) {
-    if (!isDragging) return;
-    
+    if (!isDragging || !selectedContainer) return;
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    
     const contentRect = content.getBoundingClientRect();
     const containerRect = selectedContainer.getBoundingClientRect();
-    
-    // Calculate new position with boundaries
     let newLeft = containerStartX + dx;
     let newTop = containerStartY + dy;
-    
-    // Ensure image stays within content area
     newLeft = Math.max(contentRect.left, Math.min(newLeft, contentRect.right - containerRect.width));
     newTop = Math.max(contentRect.top, Math.min(newTop, contentRect.bottom - containerRect.height));
-    
-    // Position relative to content
     const relativeLeft = newLeft - contentRect.left;
     const relativeTop = newTop - contentRect.top;
-    
     selectedContainer.style.left = `${relativeLeft}px`;
     selectedContainer.style.top = `${relativeTop}px`;
-    
     e.preventDefault();
   }
   
   function endDrag() {
+    if (isDragging && selectedContainer) {
+      updateShapeOutside(selectedContainer);
+      savePositions();
+    }
     isDragging = false;
   }
   
+  // Touch event functions: support both one-finger drag and two-finger pinch-to-zoom
   function handleTouchStart(e) {
     if (!selectedContainer || e.target.classList.contains('zoom-btn')) return;
-    
     if (e.touches.length === 1) {
-      // Single touch for dragging
       const touch = e.touches[0];
       startX = touch.clientX;
       startY = touch.clientY;
-      
       const rect = selectedContainer.getBoundingClientRect();
       containerStartX = rect.left;
       containerStartY = rect.top;
-      
       isDragging = true;
       e.preventDefault();
     } else if (e.touches.length === 2) {
-      // Pinch zoom functionality could be implemented here
-      // This would require tracking distance between two touch points
+      // Start pinch-to-zoom
+      initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
+      initialPinchWidth = parseInt(window.getComputedStyle(selectedContainer).width);
+      isDragging = false;
+      e.preventDefault();
     }
   }
   
   function handleTouchMove(e) {
-    if (!isDragging || e.touches.length !== 1) return;
-    
-    const touch = e.touches[0];
-    const dx = touch.clientX - startX;
-    const dy = touch.clientY - startY;
-    
-    const contentRect = content.getBoundingClientRect();
-    const containerRect = selectedContainer.getBoundingClientRect();
-    
-    // Calculate new position with boundaries
-    let newLeft = containerStartX + dx;
-    let newTop = containerStartY + dy;
-    
-    // Ensure image stays within content area
-    newLeft = Math.max(contentRect.left, Math.min(newLeft, contentRect.right - containerRect.width));
-    newTop = Math.max(contentRect.top, Math.min(newTop, contentRect.bottom - containerRect.height));
-    
-    // Position relative to content
-    const relativeLeft = newLeft - contentRect.left;
-    const relativeTop = newTop - contentRect.top;
-    
-    selectedContainer.style.left = `${relativeLeft}px`;
-    selectedContainer.style.top = `${relativeTop}px`;
-    
-    e.preventDefault();
+    if (!selectedContainer) return;
+    if (e.touches.length === 2 && initialPinchDistance) {
+      let currentDistance = getDistance(e.touches[0], e.touches[1]);
+      let scale = currentDistance / initialPinchDistance;
+      let newWidth = initialPinchWidth * scale;
+      selectedContainer.style.width = `${newWidth}px`;
+      updateShapeOutside(selectedContainer);
+      e.preventDefault();
+    } else if (e.touches.length === 1 && isDragging) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+      const contentRect = content.getBoundingClientRect();
+      const containerRect = selectedContainer.getBoundingClientRect();
+      let newLeft = containerStartX + dx;
+      let newTop = containerStartY + dy;
+      newLeft = Math.max(contentRect.left, Math.min(newLeft, contentRect.right - containerRect.width));
+      newTop = Math.max(contentRect.top, Math.min(newTop, contentRect.bottom - containerRect.height));
+      const relativeLeft = newLeft - contentRect.left;
+      const relativeTop = newTop - contentRect.top;
+      selectedContainer.style.left = `${relativeLeft}px`;
+      selectedContainer.style.top = `${relativeTop}px`;
+      e.preventDefault();
+    }
   }
   
-  function handleTouchEnd() {
+  function handleTouchEnd(e) {
+    if (e.touches.length < 2) {
+      initialPinchDistance = null;
+      initialPinchWidth = null;
+    }
     isDragging = false;
+    if (selectedContainer) {
+      updateShapeOutside(selectedContainer);
+      savePositions();
+    }
   }
   
   // Error handling for images
   images.forEach(img => {
     img.addEventListener('error', function() {
       console.error('Failed to load image:', img.src);
-      // Create a placeholder SVG with text
       const svgPlaceholder = `data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect fill="%23f0f0f0" width="300" height="200"/><text fill="%23999" font-family="Arial" font-size="18" font-weight="bold" x="50%" y="50%" text-anchor="middle">Image not found</text></svg>`;
       img.src = svgPlaceholder;
     });
   });
+  
+  // Load saved positions (if any) after DOM is ready
+  loadPositions();
 });
 </script>
 </body>
