@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Freedom Publishing - Interactive Text and Images</title>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: auto;
+      font-family: 'Georgia', serif;
+      background-color: #f9f7f1;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .content {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      box-sizing: border-box;
+      font-size: 1em;
+      text-align: justify;
+      position: relative;
+    }
+
+    .image-container {
+      position: absolute;
+      margin: 20px;
+      transition: all 0.3s ease;
+      z-index: 10;
+      shape-outside: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+      float: left;
+      max-width: 50%; /* Limit max width */
+    }
+
+    .draggable-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .draggable-img.selected {
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+      border: 2px dashed #e63946;
+    }
+
+    .zoom-controls {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 5px;
+      padding: 5px;
+      display: none;
+      z-index: 20;
+    }
+
+    .zoom-controls.visible {
+      display: flex;
+    }
+
+    .zoom-btn {
+      width: 30px;
+      height: 30px;
+      border: none;
+      background: #fff;
+      margin: 0 5px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .zoom-btn:hover {
+      background: #eee;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 0.5em;
+      color: #2a9d8f;
+    }
+
+    h2 {
+      font-size: 1.8em;
+      margin-top: 1.5em;
+      color: #264653;
+    }
+
+    p {
+      margin: 0 0 1.2em 0;
+      text-align: justify;
+    }
+
+    .help-text {
+      font-style: italic;
+      margin-top: 40px;
+      padding: 15px;
+      background: #e9ecef;
+      border-radius: 5px;
+    }
+
+    @media (max-width: 600px) {
+      .content {
+        padding: 10px;
+      }
+      
+      h1 {
+        font-size: 2em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="content" id="content">
+    <h1>Freedom Publishing</h1>
+    <h2>A New Interactive Reading Experience</h2>
+
+    <div class="image-container" id="imageContainer1" style="width: 300px; top: 150px; left: 50px;">
+      <img class="draggable-img" src="IMG_7424.png" alt="Nature Image">
+      <div class="zoom-controls">
+        <button class="zoom-btn zoom-in">+</button>
+        <button class="zoom-btn zoom-out">−</button>
+      </div>
+    </div>
+
+    <p>Imagine a world where digital publishing breaks free from the constraints of traditional formats. Where text and images coexist in harmony, yet maintain their independence. This experimental format represents freedom—freedom for the reader to customize their experience, freedom for content to adapt to different screens and preferences.</p>
+
+    <p>The relationship between text and image has always been complex. In conventional publishing, images are fixed in place, anchoring the text around them. But what if we could liberate both elements? What if readers could position images where they want, resize them according to their focus, while the text intelligently reflows to accommodate these changes?</p>
+
+    <div class="image-container" id="imageContainer2" style="width: 250px; top: 400px; left: 400px;">
+      <img class="draggable-img" src="IMG_7423.png" alt="Technology Image">
+      <div class="zoom-controls">
+        <button class="zoom-btn zoom-in">+</button>
+        <button class="zoom-btn zoom-out">−</button>
+      </div>
+    </div>
+
+    <!-- More paragraphs will go here -->
+    
+    <div class="help-text">
+      <p><strong>How to interact:</strong> Click on any image to select it (a red border will appear). Once selected, you can:
+      <br>- Drag the image to reposition it
+      <br>- Use the + and - buttons to resize the image
+      <br>- Zoom the entire page with your browser controls (Ctrl/Cmd +/-)</p>
+    </div>
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const images = document.querySelectorAll('.draggable-img');
+  const containers = document.querySelectorAll('.image-container');
+  const content = document.getElementById('content');
+  
+  let selectedContainer = null;
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let containerStartX = 0;
+  let containerStartY = 0;
+
+  // Initialize all images
+  containers.forEach((container, index) => {
+    const img = container.querySelector('.draggable-img');
+    const zoomControls = container.querySelector('.zoom-controls');
+    const zoomIn = zoomControls.querySelector('.zoom-in');
+    const zoomOut = zoomControls.querySelector('.zoom-out');
+    
+    // Handle image selection
+    img.addEventListener('click', function(e) {
+      e.stopPropagation();
+      
+      // Deselect previously selected image
+      if (selectedContainer && selectedContainer !== container) {
+        deselectContainer(selectedContainer);
+      }
+      
+      // Toggle selection for current image
+      if (img.classList.contains('selected')) {
+        deselectContainer(container);
+        selectedContainer = null;
+      } else {
+        selectContainer(container);
+        selectedContainer = container;
+      }
+    });
+    
+    // Zoom in functionality
+    zoomIn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const currentWidth = parseInt(window.getComputedStyle(container).width);
+      container.style.width = `${currentWidth * 1.2}px`;
+    });
+    
+    // Zoom out functionality
+    zoomOut.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const currentWidth = parseInt(window.getComputedStyle(container).width);
+      const newWidth = Math.max(100, currentWidth * 0.8);
+      container.style.width = `${newWidth}px`;
+    });
+  });
+  
+  // Click outside to deselect
+  document.addEventListener('click', function() {
+    if (selectedContainer) {
+      deselectContainer(selectedContainer);
+      selectedContainer = null;
+    }
+  });
+  
+  // Dragging functionality
+  document.addEventListener('mousedown', startDrag);
+  document.addEventListener('mousemove', drag);
+  document.addEventListener('mouseup', endDrag);
+  
+  // Touch events for mobile
+  document.addEventListener('touchstart', handleTouchStart, { passive: false });
+  document.addEventListener('touchmove', handleTouchMove, { passive: false });
+  document.addEventListener('touchend', handleTouchEnd);
+  
+  // Helper functions
+  function selectContainer(container) {
+    const img = container.querySelector('.draggable-img');
+    const zoomControls = container.querySelector('.zoom-controls');
+    
+    img.classList.add('selected');
+    zoomControls.classList.add('visible');
+    container.style.zIndex = '20';
+  }
+  
+  function deselectContainer(container) {
+    const img = container.querySelector('.draggable-img');
+    const zoomControls = container.querySelector('.zoom-controls');
+    
+    img.classList.remove('selected');
+    zoomControls.classList.remove('visible');
+    container.style.zIndex = '10';
+  }
+  
+  function startDrag(e) {
+    if (!selectedContainer || e.target.classList.contains('zoom-btn')) return;
+    
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    
+    const rect = selectedContainer.getBoundingClientRect();
+    containerStartX = rect.left;
+    containerStartY = rect.top;
+    
+    e.preventDefault();
+  }
+  
+  function drag(e) {
+    if (!isDragging) return;
+    
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    
+    const contentRect = content.getBoundingClientRect();
+    const containerRect = selectedContainer.getBoundingClientRect();
+    
+    // Calculate new position with boundaries
+    let newLeft = containerStartX + dx;
+    let newTop = containerStartY + dy;
+    
+    // Ensure image stays within content area
+    newLeft = Math.max(contentRect.left, Math.min(newLeft, contentRect.right - containerRect.width));
+    newTop = Math.max(contentRect.top, Math.min(newTop, contentRect.bottom - containerRect.height));
+    
+    // Position relative to content
+    const relativeLeft = newLeft - contentRect.left;
+    const relativeTop = newTop - contentRect.top;
+    
+    selectedContainer.style.left = `${relativeLeft}px`;
+    selectedContainer.style.top = `${relativeTop}px`;
+    
+    e.preventDefault();
+  }
+  
+  function endDrag() {
+    isDragging = false;
+  }
+  
+  function handleTouchStart(e) {
+    if (!selectedContainer || e.target.classList.contains('zoom-btn')) return;
+    
+    if (e.touches.length === 1) {
+      // Single touch for dragging
+      const touch = e.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+      
+      const rect = selectedContainer.getBoundingClientRect();
+      containerStartX = rect.left;
+      containerStartY = rect.top;
+      
+      isDragging = true;
+      e.preventDefault();
+    } else if (e.touches.length === 2) {
+      // Pinch zoom functionality could be implemented here
+      // This would require tracking distance between two touch points
+    }
+  }
+  
+  function handleTouchMove(e) {
+    if (!isDragging || e.touches.length !== 1) return;
+    
+    const touch = e.touches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    
+    const contentRect = content.getBoundingClientRect();
+    const containerRect = selectedContainer.getBoundingClientRect();
+    
+    // Calculate new position with boundaries
+    let newLeft = containerStartX + dx;
+    let newTop = containerStartY + dy;
+    
+    // Ensure image stays within content area
+    newLeft = Math.max(contentRect.left, Math.min(newLeft, contentRect.right - containerRect.width));
+    newTop = Math.max(contentRect.top, Math.min(newTop, contentRect.bottom - containerRect.height));
+    
+    // Position relative to content
+    const relativeLeft = newLeft - contentRect.left;
+    const relativeTop = newTop - contentRect.top;
+    
+    selectedContainer.style.left = `${relativeLeft}px`;
+    selectedContainer.style.top = `${relativeTop}px`;
+    
+    e.preventDefault();
+  }
+  
+  function handleTouchEnd() {
+    isDragging = false;
+  }
+  
+  // Error handling for images
+  images.forEach(img => {
+    img.addEventListener('error', function() {
+      console.error('Failed to load image:', img.src);
+      // Create a placeholder SVG with text
+      const svgPlaceholder = `data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect fill="%23f0f0f0" width="300" height="200"/><text fill="%23999" font-family="Arial" font-size="18" font-weight="bold" x="50%" y="50%" text-anchor="middle">Image not found</text></svg>`;
+      img.src = svgPlaceholder;
+    });
+  });
+});
+</script>
+</body>
+</html>
