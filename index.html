@@ -1,420 +1,473 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Freedom Publishing - Interactive Text and Images</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Text and Images</title>
   <style>
-    html, body {
-      width: 100%;
-      height: 100%;
+    body {
+      font-family: Univers 57 Condensed Oblique, Times New Roman, serif;
+      line-height: 1.6;
       margin: 0;
-      padding: 0;
-      overflow: auto;
-      font-family: 'Georgia', serif;
+      padding: 20px;
       background-color: #f9f7f1;
       color: #333;
-      line-height: 1.6;
+      overflow-x: hidden;
     }
+    
     .content {
-      width: 100%;
-      max-width: 800px;
+      max-width: 2000px;
       margin: 0 auto;
-      padding: 20px;
-      box-sizing: border-box;
-      font-size: 1em;
-      text-align: justify;
       position: relative;
+      text-align: justify;
     }
+    
     .image-container {
-      /* For text wrapping with shape-outside, the container needs to be floated and in flow.
-         If full text reflow is desired, consider using relative positioning with CSS transforms. */
-      float: left;
-      margin: 20px;
-      transition: all 0.3s ease;
-      z-index: 10;
-      shape-outside: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-      max-width: 50%; /* Limit max width */
-      /* Adding tabindex for accessibility */
-      outline: none;
+      position: absolute;
+      cursor: move;
+      transition: transform 0.2s ease, width 0.2s ease;
     }
-    .draggable-img {
+    
+    .image-container img {
       width: 100%;
       height: auto;
-      display: block;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    .draggable-img.selected {
-      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-      border: 2px dashed #e63946;
+    
+    .image-container.selected img {
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      outline: 2px dashed #e63946;
+      outline-offset: 2px;
     }
-    .zoom-controls {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      background: rgba(255,255,255,0.7);
-      border-radius: 5px;
-      padding: 5px;
-      display: none;
-      z-index: 20;
-    }
-    .zoom-controls.visible {
-      display: flex;
-    }
-    .zoom-btn {
-      width: 30px;
-      height: 30px;
-      border: none;
-      background: #fff;
-      margin: 0 5px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .zoom-btn:hover {
-      background: #eee;
-    }
-    h1 {
-      font-size: 2.5em;
-      margin-bottom: 0.5em;
-      color: #2a9d8f;
-    }
-    h2 {
-      font-size: 1.8em;
-      margin-top: 1.5em;
-      color: #264653;
-    }
-    p {
-      margin: 0 0 1.2em 0;
-      text-align: justify;
-    }
-    .help-text {
+    
+    .image-caption {
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 8px;
+      font-size: 14px;
+      text-align: center;
+      border-bottom-left-radius: 5px;
+      border-bottom-right-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-top: -5px; /* Slight overlap with the image */
       font-style: italic;
-      margin-top: 40px;
-      padding: 15px;
-      background: #e9ecef;
-      border-radius: 5px;
+      color: #444;
     }
-    @media (max-width: 600px) {
-      .content {
-        padding: 10px;
-      }
-      h1 {
-        font-size: 2em;
-      }
+    
+    /* Ensure the caption stays with the image when dragged */
+    .image-container img, .image-caption {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .text-content p {
+      margin-bottom: 1em;
+    }
+    
+    .controls {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(255,255,255,0.8);
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+    
+    .controls button {
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      margin: 0 5px;
+      cursor: pointer;
+      border: none;
+      background: white;
+      border-radius: 50%;
+    }
+    
+    .controls button:hover {
+      background: #f0f0f0;
     }
   </style>
 </head>
 <body>
   <div class="content" id="content">
-    <h1>Freedom Publishing</h1>
-    <h2>A New Interactive Reading Experience</h2>
+    <div class="text-content">
+      
+<h1>the quick brown fox jumps over the lazy dog</h1>
 
-    <!-- Added tabindex and aria-label for accessibility -->
-    <div class="image-container" id="imageContainer1" style="width: 300px; top: 150px; left: 50px;" tabindex="0" aria-label="Draggable image container">
-      <img class="draggable-img" src="IMG_7424.png" alt="Nature Image">
-      <div class="zoom-controls">
-        <button class="zoom-btn zoom-in" aria-label="Zoom in">+</button>
-        <button class="zoom-btn zoom-out" aria-label="Zoom out">−</button>
-      </div>
+<h2>video installation, projections, publication, flux schnell, SDXL, CLIP, computer generated graphics</h2>
+  
+<p>What does it mean to mean? This project stems from research conducted to understand the question ‘Can computers understand?’. By focusing on a sentence of a very transparent, almost invisible nature, I want to explore the digital process of information extraction, translation and reconstruction. Using CLIP embeddings, that are a capture of the input's essence or a form of representation of its “meaning”, I aim to present  a different way of the process called ‘understanding’, and challenge its defined and linear status.</p>
+
+<h1>semantic image, digital simulation, language and photography</h1>
+
+<p>This paper is a conclusion of my attempt at understanding computer vision and its relations to ontology, simulation, computing and cognition. After a couple of months of research I was able to distinguish these 4 elements, whose relation to computer vision I found depicting a very vague and distant idea, that I am still to study much longer. The idea comes from my very long-lasting fascination with cognitive neuroscience and epistemology. I always thought the two had a weird relation, both meaning the same ‘thing’, but at the same time in much different areas. Cognitive neuroscience meaning, the study of how our physical brain physically receives, translates and operates physical stimuli, and epistemology as study of the theory of how we interact between our mind and the outside, focusing more on the ‘spiritual’, yet scientific aspect of it. This relationship is what pushed me towards computer vision because it captures perfectly the struggles of modern science. What does it mean to know or to mean? Those were the questions guiding me on this journey. In the first part I will share my reflections that came from early stages of my research, that made me reflect on my practice and what photography or an image means to me. I have become quite distant from what we could consider a ‘standard’ photographic practice, but in spite of that I actually feel very connected, inspired and relevant in this field. I will also discuss what I learned from in class discussions and presentations that were also quite helpful in directing my attention and research into very interesting areas. In the first part of this paper I will talk about photography as a term used to describe art discipline, and my relation to it.</p>
+
+<h1>imageology</h1>
+
+<p>’Imageology’ is a term I propose, because I no longer believe that photography is relevant enough as a means to describe a medium we now mean, when we use that word. There are simply too many battles, dilemmas and unaddressed ambiguities, to continue to carry it in that sense, and we must ‘retreat’ to safe. provable , technically defined way stating that photography can actually only be used to describe practices associated with what we now call ‘analogue’ photography. One of aspects explored by me in my project, and presented in this essay is the similarity of words or their ‘meaning’, ‘to simulate’ and ‘to compute’, because what does it mean ‘to simulate’ if not to artificially compute , and what does it mean ‘to compute’ if not to perform an ‘artificial simulation’.</p>
+
+<h1>to compute : to calculate an answer or amount by using a machine[1]</h1>
+<h1>to simulate : to do or make something that looks real but is not real[2]</h1>
+
+<p>This comparison clearly shows they are used to represent different ideas or actions, however that changes when we consider digital photography against those definitions. Digital photography is connected with analogue photography only when we define it as a digital ‘simulation’ of the analogue process, where instead of silver halide crystals (black and white film)[3], the photons and their intensity determine an adequate electron load and are synthesized together by code that in consequence ‘generates’ an image. In no way can you make an argument that those two processes are connected if you are also trying to prove that it is the physical process of light physics that is the essential part between the two. This is because the two methods are quite different, one is a quality of a material described by its physics, and thus the photograph is so close to the original situation as possible, being superior in this regard to for example painting, being more even then a copy because it was created using ‘uniform’ or ‘standardised’ way as a mean to record it, rather than a tool for artistic expression, and the second, an arbitrary way of processing data gathered by detecting the intensity of photons. This can be discovered when taking a closer look at a camera, and counterintuitively, we can see that a camera image sensor does not differentiate between colour of the light, only its intensity, relying on a filter, like a Bayer filter, or grouping certain light frequencies corresponding to individual colours. This distinction is necessary to understand in order to understand my argument concerning the photographic-less nature of my ideas and projects, but what I still refer to as relevant to the field. I decided to include this part of my writing in the first part of it, because I want to describe the space my research has been conducted in. I was very drawn to understanding images in a semantic way, or at least using the same means. Like sonification of images, it reveals the unseen patterns and relations, an aspect of that that truly caught my eye is something called ‘semantic image’,</p>
+
+<h1>a Semantic Image refers to an image that has been analyzed and understood in terms of its meaning, objects, scenes, knowledge, and emotions, through the extraction of features and high-level reasoning in image processing and pattern recognition.[4]</h1>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor...</p>
     </div>
+  
+<div class="image-container" id="img1" style="left: 0px; top: 0px; width: 200px; z-index: 10;">
+  <img src="inspo.jpg" alt="Image 1">
+  <div class="image-caption">inspiration behind the process</div>
+</div>
 
-    <p>Imagine a world where digital publishing breaks free from the constraints of traditional formats. Where text and images coexist in harmony, yet maintain their independence. This experimental format represents freedom—freedom for the reader to customize their experience, freedom for content to adapt to different screens and preferences.</p>
+<div class="image-container" id="img2" style="left: 0px; top: 0px; width: 250px; z-index: 10;">
+  <img src="cover.png" alt="Image 2">
+  <div class="image-caption">alternative publication cover</div>
+</div>
 
-    <p>The relationship between text and image has always been complex. In conventional publishing, images are fixed in place, anchoring the text around them. But what if we could liberate both elements? What if readers could position images where they want, resize them according to their focus, while the text intelligently reflows to accommodate these changes?</p>
+<div class="image-container" id="img3" style="left: 0px; top: 0px; width: 250px; z-index: 10;">
+  <img src="example1.png" alt="Image 3">
+  <div class="image-caption">early version screenshot</div>
+</div>
 
-    <div class="image-container" id="imageContainer2" style="width: 250px; top: 400px; left: 400px;" tabindex="0" aria-label="Draggable image container">
-      <img class="draggable-img" src="IMG_7423.png" alt="Technology Image">
-      <div class="zoom-controls">
-        <button class="zoom-btn zoom-in" aria-label="Zoom in">+</button>
-        <button class="zoom-btn zoom-out" aria-label="Zoom out">−</button>
-      </div>
-    </div>
-
-    <!-- More paragraphs will go here -->
-    <div class="help-text">
-      <p><strong>How to interact:</strong> Click or tap on any image to select it (a red border will appear). Once selected, you can:
-      <br>- Drag the image (or use arrow keys) to reposition it
-      <br>- Use the + and - buttons (or keyboard keys) to resize the image
-      <br>- For mobile, pinch to zoom the image
-      <br>- Browser zoom (Ctrl/Cmd +/-) works as usual</p>
-    </div>
+  <div class="controls">
+    <button id="zoomIn">+</button>
+    <button id="zoomOut">−</button>
   </div>
 
-<script>
+  <script>
+    
 document.addEventListener('DOMContentLoaded', function() {
-  const images = document.querySelectorAll('.draggable-img');
-  const containers = document.querySelectorAll('.image-container');
+  // Elements
   const content = document.getElementById('content');
+  const imageContainers = document.querySelectorAll('.image-container');
+  const zoomInBtn = document.getElementById('zoomIn');
+  const zoomOutBtn = document.getElementById('zoomOut');
   
+  // Variables
   let selectedContainer = null;
   let isDragging = false;
-  let startX = 0, startY = 0;
-  let containerStartX = 0, containerStartY = 0;
-  let initialPinchDistance = null;
-  let initialPinchWidth = null;
-
-  // Helper to calculate distance between two touches
-  function getDistance(touch1, touch2) {
-    const dx = touch2.clientX - touch1.clientX;
-    const dy = touch2.clientY - touch1.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-
-  // Update the shape-outside property based on current dimensions
-  function updateShapeOutside(container) {
-    const rect = container.getBoundingClientRect();
-    container.style.shapeOutside = `polygon(0 0, ${rect.width}px 0, ${rect.width}px ${rect.height}px, 0 ${rect.height}px)`;
-  }
+  let startX, startY, startLeft, startTop;
+  let zoomLevel = 1;
+  const zoomFactor = 1.2;
+  let reflowTimeout = null;
   
-  // Save current positions and widths to localStorage
-  function savePositions() {
-    const positions = {};
-    containers.forEach(container => {
-      positions[container.id] = {
-        left: container.style.left,
-        top: container.style.top,
-        width: container.style.width
-      };
+  // Initialize
+  setupImageContainers();
+  setupZoomButtons();
+  
+  // Functions
+  function setupImageContainers() {
+    imageContainers.forEach(container => {
+      // Make images clickable for selection
+      container.addEventListener('mousedown', handleImageMouseDown);
+      container.addEventListener('touchstart', handleImageTouchStart, { passive: false });
+      
+      // Set initial position to make them float above text
+      container.style.zIndex = '10';
+      
+      // Apply initial shape-outside for text wrapping
+      updateShapeOutside(container);
     });
-    localStorage.setItem('imagePositions', JSON.stringify(positions));
-  }
-  
-  // Load positions from localStorage, if any
-  function loadPositions() {
-    const positions = JSON.parse(localStorage.getItem('imagePositions'));
-    if (positions) {
-      containers.forEach(container => {
-        if (positions[container.id]) {
-          container.style.left = positions[container.id].left;
-          container.style.top = positions[container.id].top;
-          container.style.width = positions[container.id].width;
-          updateShapeOutside(container);
-        }
-      });
-    }
-  }
-  
-  // Initialize all images and add keyboard accessibility
-  containers.forEach((container) => {
-    const img = container.querySelector('.draggable-img');
-    const zoomControls = container.querySelector('.zoom-controls');
-    const zoomIn = zoomControls.querySelector('.zoom-in');
-    const zoomOut = zoomControls.querySelector('.zoom-out');
     
-    // Handle image selection via click/tap
-    img.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (selectedContainer && selectedContainer !== container) {
-        deselectContainer(selectedContainer);
+    // Handle deselection when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.image-container') && !e.target.closest('.controls')) {
+        deselectAllImages();
       }
-      if (img.classList.contains('selected')) {
-        deselectContainer(container);
-        selectedContainer = null;
+    });
+  }
+  
+  function setupZoomButtons() {
+    zoomInBtn.addEventListener('click', function() {
+      if (selectedContainer) {
+        // Zoom selected image
+        const currentWidth = parseFloat(getComputedStyle(selectedContainer).width);
+        selectedContainer.style.width = `${currentWidth * zoomFactor}px`;
+        
+        // Smooth transition for shape-outside update
+        selectedContainer.style.transition = 'width 0.3s ease-in-out';
+        
+        // Delayed shape-outside update for smoother reflow
+        clearTimeout(reflowTimeout);
+        reflowTimeout = setTimeout(() => {
+          updateShapeOutside(selectedContainer);
+        }, 300);
       } else {
-        selectContainer(container);
-        selectedContainer = container;
+        // Zoom entire content
+        zoomLevel *= zoomFactor;
+        content.style.transform = `scale(${zoomLevel})`;
+        content.style.transformOrigin = 'top center';
+        content.style.transition = 'transform 0.3s ease-in-out';
       }
     });
     
-    // Zoom in functionality
-    zoomIn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const currentWidth = parseInt(window.getComputedStyle(container).width);
-      container.style.width = `${currentWidth * 1.2}px`;
-      updateShapeOutside(container);
-      savePositions();
-    });
-    
-    // Zoom out functionality
-    zoomOut.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const currentWidth = parseInt(window.getComputedStyle(container).width);
-      const newWidth = Math.max(100, currentWidth * 0.8);
-      container.style.width = `${newWidth}px`;
-      updateShapeOutside(container);
-      savePositions();
-    });
-    
-    // Keyboard accessibility: allow repositioning and zoom with arrow and + / - keys
-    container.addEventListener('keydown', function(e) {
-      if (selectedContainer === container) {
-        const moveAmount = 10;
-        let currentLeft = parseInt(container.style.left, 10) || 0;
-        let currentTop = parseInt(container.style.top, 10) || 0;
-        if (e.key === 'ArrowUp') {
-          container.style.top = (currentTop - moveAmount) + 'px';
-        } else if (e.key === 'ArrowDown') {
-          container.style.top = (currentTop + moveAmount) + 'px';
-        } else if (e.key === 'ArrowLeft') {
-          container.style.left = (currentLeft - moveAmount) + 'px';
-        } else if (e.key === 'ArrowRight') {
-          container.style.left = (currentLeft + moveAmount) + 'px';
-        } else if (e.key === '+' || e.key === '=') {
-          const currentWidth = parseInt(window.getComputedStyle(container).width);
-          container.style.width = `${currentWidth * 1.2}px`;
-        } else if (e.key === '-') {
-          const currentWidth = parseInt(window.getComputedStyle(container).width);
-          container.style.width = `${Math.max(100, currentWidth * 0.8)}px`;
-        }
-        updateShapeOutside(container);
-        savePositions();
-        e.preventDefault();
+    zoomOutBtn.addEventListener('click', function() {
+      if (selectedContainer) {
+        // Zoom out selected image
+        const currentWidth = parseFloat(getComputedStyle(selectedContainer).width);
+        selectedContainer.style.width = `${currentWidth / zoomFactor}px`;
+        
+        // Smooth transition for shape-outside update
+        selectedContainer.style.transition = 'width 0.3s ease-in-out';
+        
+        // Delayed shape-outside update for smoother reflow
+        clearTimeout(reflowTimeout);
+        reflowTimeout = setTimeout(() => {
+          updateShapeOutside(selectedContainer);
+        }, 300);
+      } else {
+        // Zoom out entire content
+        zoomLevel /= zoomFactor;
+        content.style.transform = `scale(${zoomLevel})`;
+        content.style.transformOrigin = 'top center';
+        content.style.transition = 'transform 0.3s ease-in-out';
       }
     });
-  });
+  }
   
-  // Deselect container when clicking outside
-  document.addEventListener('click', function() {
-    if (selectedContainer) {
-      deselectContainer(selectedContainer);
-      selectedContainer = null;
+  function handleImageMouseDown(e) {
+    if (e.target.tagName === 'IMG' || e.target.classList.contains('image-container') || e.target.classList.contains('image-caption')) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const container = e.target.closest('.image-container');
+      selectImage(container);
+      
+      // Start dragging
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startLeft = parseFloat(getComputedStyle(container).left) || 0;
+      startTop = parseFloat(getComputedStyle(container).top) || 0;
+      
+      // Remove transition during drag start
+      container.style.transition = 'none';
+      
+      // Setup move and end events
+      document.addEventListener('mousemove', handleImageMouseMove);
+      document.addEventListener('mouseup', handleImageMouseUp);
     }
-  });
-  
-  // Dragging functionality for mouse events
-  document.addEventListener('mousedown', startDrag);
-  document.addEventListener('mousemove', drag);
-  document.addEventListener('mouseup', endDrag);
-  
-  // Touch events for mobile: includes both dragging (one-finger) and pinch-to-zoom (two-finger)
-  document.addEventListener('touchstart', handleTouchStart, { passive: false });
-  document.addEventListener('touchmove', handleTouchMove, { passive: false });
-  document.addEventListener('touchend', handleTouchEnd);
-  
-  // Helper functions for selection
-  function selectContainer(container) {
-    const img = container.querySelector('.draggable-img');
-    const zoomControls = container.querySelector('.zoom-controls');
-    img.classList.add('selected');
-    zoomControls.classList.add('visible');
-    container.style.zIndex = '20';
-    // Focus for keyboard navigation
-    container.focus();
   }
   
-  function deselectContainer(container) {
-    const img = container.querySelector('.draggable-img');
-    const zoomControls = container.querySelector('.zoom-controls');
-    img.classList.remove('selected');
-    zoomControls.classList.remove('visible');
-    container.style.zIndex = '10';
+  function handleImageTouchStart(e) {
+    if (e.target.tagName === 'IMG' || e.target.classList.contains('image-container') || e.target.classList.contains('image-caption')) {
+      e.preventDefault();
+      
+      const container = e.target.closest('.image-container');
+      selectImage(container);
+      
+      // Start dragging
+      isDragging = true;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startLeft = parseFloat(getComputedStyle(container).left) || 0;
+      startTop = parseFloat(getComputedStyle(container).top) || 0;
+      
+      // Remove transition during drag start
+      container.style.transition = 'none';
+      
+      // Setup move and end events
+      document.addEventListener('touchmove', handleImageTouchMove, { passive: false });
+      document.addEventListener('touchend', handleImageTouchEnd);
+    }
   }
   
-  // Mouse drag functions
-  function startDrag(e) {
-    if (!selectedContainer || e.target.classList.contains('zoom-btn')) return;
-    isDragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    const rect = selectedContainer.getBoundingClientRect();
-    containerStartX = rect.left;
-    containerStartY = rect.top;
-    e.preventDefault();
-  }
+  // Track last position for throttling
+  let lastUpdateTime = 0;
+  let lastPosX = 0;
+  let lastPosY = 0;
+  const updateInterval = 50; // Update text flow every 50ms during drag
   
-  function drag(e) {
+  function handleImageMouseMove(e) {
     if (!isDragging || !selectedContainer) return;
+    
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    const contentRect = content.getBoundingClientRect();
-    const containerRect = selectedContainer.getBoundingClientRect();
-    let newLeft = containerStartX + dx;
-    let newTop = containerStartY + dy;
-    newLeft = Math.max(contentRect.left, Math.min(newLeft, contentRect.right - containerRect.width));
-    newTop = Math.max(contentRect.top, Math.min(newTop, contentRect.bottom - containerRect.height));
-    const relativeLeft = newLeft - contentRect.left;
-    const relativeTop = newTop - contentRect.top;
-    selectedContainer.style.left = `${relativeLeft}px`;
-    selectedContainer.style.top = `${relativeTop}px`;
+    
+    // Update position
+    const newLeft = startLeft + dx;
+    const newTop = startTop + dy;
+    
+    // Always update the visual position immediately for smooth dragging
+    selectedContainer.style.left = `${newLeft}px`;
+    selectedContainer.style.top = `${newTop}px`;
+    
+    // But throttle the shape-outside updates for smoother text reflow
+    const now = Date.now();
+    if (now - lastUpdateTime > updateInterval || 
+        Math.abs(newLeft - lastPosX) > 30 || 
+        Math.abs(newTop - lastPosY) > 30) {
+      
+      lastPosX = newLeft;
+      lastPosY = newTop;
+      lastUpdateTime = now;
+      
+      // Clear any pending updates
+      clearTimeout(reflowTimeout);
+      
+      // Schedule a reflow with a slight delay
+      reflowTimeout = setTimeout(() => {
+        updateShapeOutside(selectedContainer);
+      }, 50);
+    }
+  }
+  
+  function handleImageTouchMove(e) {
+    if (!isDragging || !selectedContainer) return;
     e.preventDefault();
+    
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    
+    // Update position
+    const newLeft = startLeft + dx;
+    const newTop = startTop + dy;
+    
+    // Always update the visual position immediately for smooth dragging
+    selectedContainer.style.left = `${newLeft}px`;
+    selectedContainer.style.top = `${newTop}px`;
+    
+    // But throttle the shape-outside updates for smoother text reflow
+    const now = Date.now();
+    if (now - lastUpdateTime > updateInterval || 
+        Math.abs(newLeft - lastPosX) > 30 || 
+        Math.abs(newTop - lastPosY) > 30) {
+      
+      lastPosX = newLeft;
+      lastPosY = newTop;
+      lastUpdateTime = now;
+      
+      // Clear any pending updates
+      clearTimeout(reflowTimeout);
+      
+      // Schedule a reflow with a slight delay
+      reflowTimeout = setTimeout(() => {
+        updateShapeOutside(selectedContainer);
+      }, 50);
+    }
   }
   
-  function endDrag() {
-    if (isDragging && selectedContainer) {
+  function handleImageMouseUp() {
+    if (!isDragging || !selectedContainer) return;
+    
+    // Enable transition again for smooth final positioning
+    selectedContainer.style.transition = 'transform 0.3s ease, width 0.3s ease';
+    
+    // Final update to shape-outside with a slight delay for smooth animation
+    clearTimeout(reflowTimeout);
+    reflowTimeout = setTimeout(() => {
       updateShapeOutside(selectedContainer);
-      savePositions();
-    }
+    }, 100);
+    
     isDragging = false;
+    document.removeEventListener('mousemove', handleImageMouseMove);
+    document.removeEventListener('mouseup', handleImageMouseUp);
   }
   
-  // Touch event functions: support both one-finger drag and two-finger pinch-to-zoom
-  function handleTouchStart(e) {
-    if (!selectedContainer || e.target.classList.contains('zoom-btn')) return;
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      startX = touch.clientX;
-      startY = touch.clientY;
-      const rect = selectedContainer.getBoundingClientRect();
-      containerStartX = rect.left;
-      containerStartY = rect.top;
-      isDragging = true;
-      e.preventDefault();
-    } else if (e.touches.length === 2) {
-      // Start pinch-to-zoom
-      initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
-      initialPinchWidth = parseInt(window.getComputedStyle(selectedContainer).width);
-      isDragging = false;
-      e.preventDefault();
-    }
-  }
-  
-  function handleTouchMove(e) {
-    if (!selectedContainer) return;
-    if (e.touches.length === 2 && initialPinchDistance) {
-      let currentDistance = getDistance(e.touches[0], e.touches[1]);
-      let scale = currentDistance / initialPinchDistance;
-      let newWidth = initialPinchWidth * scale;
-      selectedContainer.style.width = `${newWidth}px`;
+  function handleImageTouchEnd() {
+    if (!isDragging || !selectedContainer) return;
+    
+    // Enable transition again for smooth final positioning
+    selectedContainer.style.transition = 'transform 0.3s ease, width 0.3s ease';
+    
+    // Final update to shape-outside with a slight delay for smooth animation
+    clearTimeout(reflowTimeout);
+    reflowTimeout = setTimeout(() => {
       updateShapeOutside(selectedContainer);
-      e.preventDefault();
-    } else if (e.touches.length === 1 && isDragging) {
-      const touch = e.touches[0];
-      const dx = touch.clientX - startX;
-      const dy = touch.clientY - startY;
-      const contentRect = content.getBoundingClientRect();
-      const containerRect = selectedContainer.getBoundingClientRect();
-      let newLeft = containerStartX + dx;
-      let newTop = containerStartY + dy;
-      newLeft = Math.max(contentRect.left, Math.min(newLeft, contentRect.right - containerRect.width));
-      newTop = Math.max(contentRect.top, Math.min(newTop, contentRect.bottom - containerRect.height));
-      const relativeLeft = newLeft - contentRect.left;
-      const relativeTop = newTop - contentRect.top;
-      selectedContainer.style.left = `${relativeLeft}px`;
-      selectedContainer.style.top = `${relativeTop}px`;
-      e.preventDefault();
-    }
-  }
-  
-  function handleTouchEnd(e) {
-    if (e.touches.length < 2) {
-      initialPinchDistance = null;
-      initialPinchWidth = null;
-    }
+    }, 100);
+    
     isDragging = false;
-    if (selectedContainer) {
-      updateShapeOutside(selectedContainer);
-      savePositions();
-    }
+    document.removeEventListener('touchmove', handleImageTouchMove);
+    document.removeEventListener('touchend', handleImageTouchEnd);
   }
   
-  // Error handling for images
-  images.forEach(img => {
-    img.addEventListener('error', function() {
-      console.error('Failed to load image:', img.src);
-      const svgPlaceholder = `data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect fill="%23f0f0f0" width="300" height="200"/><text fill="%23999" font-family="Arial" font-size="18" font-weight="bold" x="50%" y="50%" text-anchor="middle">Image not found</text></svg>`;
-      img.src = svgPlaceholder;
+  function selectImage(container) {
+    // Deselect previous selection
+    deselectAllImages();
+    
+    // Select new image
+    selectedContainer = container;
+    container.classList.add('selected');
+    container.style.zIndex = '20';
+  }
+  
+  function deselectAllImages() {
+    imageContainers.forEach(container => {
+      container.classList.remove('selected');
+      container.style.zIndex = '10';
     });
-  });
+    selectedContainer = null;
+  }
   
-  // Load saved positions (if any) after DOM is ready
-  loadPositions();
+  function updateShapeOutside(container) {
+    // Calculate the shape-outside polygon based on the container's dimensions
+    const rect = container.getBoundingClientRect();
+    const parentRect = content.getBoundingClientRect();
+    
+    // Calculate relative position to parent
+    const top = rect.top - parentRect.top;
+    const left = rect.left - parentRect.left;
+    const right = left + rect.width;
+    const bottom = top + rect.height;
+    
+    // Create a more complex shape-outside with rounded corners for smoother text flow
+    // This creates a slight margin around the image for better text wrapping
+    const margin = 10; // Margin in pixels
+    
+    const shapePolygon = `
+      polygon(
+        ${left - margin}px ${top - margin}px, 
+        ${right + margin}px ${top - margin}px, 
+        ${right + margin}px ${bottom + margin}px, 
+        ${left - margin}px ${bottom + margin}px
+      )
+    `;
+    
+    // Apply the shape-outside with a smooth transition
+    container.style.shapeOutside = shapePolygon;
+    container.style.shapeMargin = '10px'; // Additional margin for smoother text flow
+    
+    // For wrapping text, we also need to set float
+    container.style.float = left < parentRect.width / 2 ? 'left' : 'right';
+  }
 });
-</script>
+
+  </script>
 </body>
 </html>
